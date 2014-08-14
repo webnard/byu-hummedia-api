@@ -66,3 +66,13 @@ def test_patch_video_without_good_date(app, ACCOUNTS):
   
   result_data = json.loads(result.data)
   assert result_data['ma:title'] == patch['ma:title']
+
+def test_read_access_identical_users(app, ACCOUNTS):
+  app.login(ACCOUNTS['SUPERUSER'])
+
+  users = ['gnorris','gnorris','gnorris']
+  mock_data = {'dc:rights': {'read': users, 'write': users}}
+  posted = app.post('/video', data=json.dumps(mock_data), content_type='application/json')
+  response = json.loads(posted.data)
+  assert len(response['dc:rights']['read']) is 1
+  assert len(response['dc:rights']['write']) is 1
