@@ -1,8 +1,12 @@
 import pytest
 import io
 import json
+import sys
 from .. import config
 from .. import vtt
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 def test_from_srt(ASSETS):
   f = io.BytesIO()
