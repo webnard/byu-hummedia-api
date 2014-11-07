@@ -21,7 +21,9 @@ def test_from_srt_file(ASSETS):
   o = io.BytesIO()
   vtt.from_srt(i, o)
   compare = open(ASSETS + 'subs.vtt', 'r')
-  assert o.getvalue() == compare.read()
+  v = o.getvalue().decode('utf8')
+  w = compare.read().decode('utf8')
+  assert v == w
 
 def test_from_bad_srt(ASSETS):
   i = open(ASSETS + 'fake.srt')
