@@ -54,6 +54,10 @@ def from_srt(input_f, output_f):
   """
   with vtt_open(input_f, 'r') as f:
     orig = f.read()
+
+    # caption converter seems to have a tough time with the BOM on
+    # Python < 2.7.8, so ditch it if it exists.
+    orig = orig[3:] if orig[:3] == codecs.BOM_UTF8 else orig
     detect = chardet.detect(orig)
     encoding = detect['encoding']
     confidence = detect['confidence']
