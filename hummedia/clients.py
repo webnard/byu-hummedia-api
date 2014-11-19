@@ -85,12 +85,15 @@ class Popcorn_Client():
 
 class IC_Client():
   ''' For the international cinema. Provides a zip file. Serialization only '''
-  import zipfile, json, string
 
-  def serialize(self,obj,media,required=None):
-    ''' Required is ignored but needed for duck typing like the popcorn client '''
+  def serialize(self,obj,media,resp=True,required=None):
+    ''' Required and resp are ignored but needed for duck typing '''
 
-    print "HEYYY"
+    import json, string, io
+    import traceback
+    import tempfile
+    from flask import send_file
+    from zipfile import ZipFile
 
     collection = Popcorn_Client().serialize(obj, media, False, False)
     required = Popcorn_Client().serialize(obj, media, False, True)
@@ -101,7 +104,7 @@ class IC_Client():
     try:
       subtitle_name = media['ma:hasRelatedResource'][0]['@id'].split('/')[-1]
       subtitle = config.SUBTITLE_DIRECTORY + subtitle_name
-    except KeyError:
+    except (KeyError, IndexError) as e:
       subtitle = None
 
     icf = {
@@ -110,12 +113,26 @@ class IC_Client():
         'subtitles': None if subtitle is None else filename + '.vtt'
     }
 
-    z = ZipFile(media['ma:title'] + '.zip')
+    #zipholder = io.BytesIO()
+    zipholder = tempfile.NamedTemporaryFile()
+    z = ZipFile(zipholder, 'w')
     z.writestr(filename + '.json', json.dumps(both))
     z.writestr(filename + '.icf', json.dumps(icf))
     if subtitle is not None:
       z.write(subtitle, filename + '.vtt')
 
-    return Response(z, status=200, mimetype='application/zip')
+    return send_file(
+        zipholder.name,
+        mimetype='application/zip',
+        as_attachment=True,
+        attachment_filename=media['ma:title'] + '.zip'
+    )
+    #return Response(
+    #    z,
+    #    status=200,
+    #    mimetype='application/zip',
+    #    content_type='application/zip',
+    #    content_disposition='attachment; filename=books.csv'
+    #)
         
 lookup={"popcorn": Popcorn_Client, "ic": IC_Client}
