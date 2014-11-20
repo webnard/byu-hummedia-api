@@ -1,4 +1,7 @@
 import json
+import subprocess
+import tempfile
+import os
 
 def test_download_ic_file(app, ACCOUNTS):
   from zipfile import ZipFile
@@ -33,6 +36,8 @@ def test_download_ic_file(app, ACCOUNTS):
   assert annotation_result.headers.get('Content-Type') == 'application/zip'
 
   z = ZipFile(StringIO(annotation_result.data))
+  assert z.testzip() is None, "Zip file is corrupt"
+
   items = z.namelist()
 
   assert len(filter(lambda fname: fname.endswith('.json'), items)) is 1, 'No annotations in archive'
@@ -41,3 +46,10 @@ def test_download_ic_file(app, ACCOUNTS):
   a_filename = filter(lambda fname: fname.endswith('.json'), items)[0]
   a = json.loads(z.read(a_filename))
   assert len(a) is 2, 'There are not two annotation sets in the annotation file.'
+
+ 
+  with tempfile.NamedTemporaryFile() as zipholder:
+    zipholder.write(annotation_result.data)
+    filedir = os.path.dirname(zipholder.name)
+    status = subprocess.call(['unzip', zipholder.name, '-d', filedir])
+    assert status is 0, "Zip file could not be unzipped by system."
