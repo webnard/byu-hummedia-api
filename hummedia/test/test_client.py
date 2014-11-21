@@ -4,6 +4,7 @@ import tempfile
 import os
 
 def test_download_ic_file(app, ACCOUNTS):
+  import shutil
   from zipfile import ZipFile
   from StringIO import StringIO
 
@@ -47,9 +48,16 @@ def test_download_ic_file(app, ACCOUNTS):
   a = json.loads(z.read(a_filename))
   assert len(a) is 2, 'There are not two annotation sets in the annotation file.'
 
- 
-  with tempfile.NamedTemporaryFile() as zipholder:
-    zipholder.write(annotation_result.data)
-    filedir = os.path.dirname(zipholder.name)
-    status = subprocess.call(['unzip', zipholder.name, '-d', filedir])
-    assert status is 0, "Zip file could not be unzipped by system."
+  zipholder = tempfile.mkstemp()
+  f = zipholder[0]
+  name = zipholder[1]
+
+  os.write(f, annotation_result.data)
+  filedir = tempfile.mkdtemp()
+  status = subprocess.call(['unzip', name, '-d', filedir])
+
+  os.close(f)
+
+  shutil.rmtree(filedir)
+  os.remove(name)
+  assert status is 0, "Zip file could not be unzipped by system."
