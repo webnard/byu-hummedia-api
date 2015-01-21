@@ -1,8 +1,9 @@
-from flask import request, jsonify, session
+from flask import request, jsonify, session, Response
 from helpers import crossdomain, endpoint_404, mongo_jsonify
 from resources import *
 from config import CROSS_DOMAIN_HOSTS
 from hummedia import app
+from shelljob import proc
 
 resource_lookup={"annotation":Annotation,"collection":AssetGroup,"video":MediaAsset, "account":UserProfile}
 
@@ -44,6 +45,24 @@ def modify_subtitle(filename):
     elif request.method == 'PUT':
         replacement = request.files['subtitle']
         return video.update_subtitle(filename, replacement)
+
+@app.route('/video/<pid>/waveform.json', methods=['GET'])
+def load_waveform(pid):
+  import os
+
+  video = MediaAsset(request)
+  group = proc.Group()
+  path = os.path.dirname(__file__)
+  cmd =  os.path.join(path, 'utils', 'waveform-2.0.0', 'waveform')
+  filename = '/vagrant/api/real_files/trailer.mp4' # TODO
+  process = group.run([cmd, filename, '--wjs-plain', '--waveformjs', '-'])
+  
+  def data():
+    while process.is_pending():
+      lines = process.readlines()
+      for proc, line in lines:
+        yield line
+  return Response( data(), mimetype='text/json')
 
 @app.route('/')
 def index():
