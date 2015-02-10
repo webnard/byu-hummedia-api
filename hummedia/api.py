@@ -4,6 +4,8 @@ from resources import *
 from config import CROSS_DOMAIN_HOSTS
 from hummedia import app
 from shelljob import proc
+import subprocess
+from subprocess import Popen
 
 resource_lookup={"annotation":Annotation,"collection":AssetGroup,"video":MediaAsset, "account":UserProfile}
 
@@ -65,13 +67,14 @@ def load_waveform(pid):
 
   # TODO: need to decide whether to prefer webm or mp4
   filename = config.MEDIA_DIRECTORY + fid + '.' + ext
-  print filename
-  process = group.run([cmd, filename, '--wjs-plain', '--waveformjs', '-'])
+  process = Popen([cmd, filename, '--wjs-plain', '--waveformjs', '-'], stdout=subprocess.PIPE)
   
   def data():
     lines_iterator = iter(process.stdout.readline, '')
     for line in lines_iterator:
       yield line
+    process.communicate()
+
   return Response( data(), mimetype='text/json')
 
 @app.route('/')
