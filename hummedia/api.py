@@ -54,14 +54,24 @@ def load_waveform(pid):
   group = proc.Group()
   path = os.path.dirname(__file__)
   cmd =  os.path.join(path, 'utils', 'waveform-2.0.0', 'waveform')
-  filename = '/vagrant/api/real_files/trailer.mp4' # TODO
+  asset = MediaAsset.model.find_one({'@graph.pid': pid})
+
+  if asset is None:
+    return endpoint_404()
+
+  locator = asset['@graph']['ma:locator'][0]
+  fid = locator['@id']
+  ext = locator['ma:hasFormat'].split('/')[-1]
+
+  # TODO: need to decide whether to prefer webm or mp4
+  filename = config.MEDIA_DIRECTORY + fid + '.' + ext
+  print filename
   process = group.run([cmd, filename, '--wjs-plain', '--waveformjs', '-'])
   
   def data():
-    while process.is_pending():
-      lines = process.readlines()
-      for proc, line in lines:
-        yield line
+    lines_iterator = iter(process.stdout.readline, '')
+    for line in lines_iterator:
+      yield line
   return Response( data(), mimetype='text/json')
 
 @app.route('/')
