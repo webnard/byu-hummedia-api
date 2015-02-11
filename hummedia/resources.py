@@ -157,15 +157,18 @@ class MediaAsset(Resource):
         from shelljob import proc
         from subprocess import PIPE, Popen
         from helpers import endpoint_404
-        print request
 
-        group = proc.Group()
-        path = os.path.dirname(__file__)
-        cmd =  os.path.join(path, 'utils', 'waveform-2.0.0', 'waveform')
         asset = MediaAsset.model.find_one({'@graph.pid': video_id})
 
         if asset is None:
             return endpoint_404()
+        
+        if not self.acl_write_check(asset):
+            return action_401()
+
+        group = proc.Group()
+        path = os.path.dirname(__file__)
+        cmd =  os.path.join(path, 'utils', 'waveform-2.0.0', 'waveform')
 
         locator = asset['@graph']['ma:locator'][0]
         fid = locator['@id']
@@ -356,6 +359,7 @@ class MediaAsset(Resource):
     def acl_write_check(self,bundle=None):
         from auth import get_profile
         atts=get_profile()
+        print atts
         if atts['superuser'] or (atts['role']=='faculty' and not bundle):
             return True
         if bundle:

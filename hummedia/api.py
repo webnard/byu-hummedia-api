@@ -48,7 +48,11 @@ def modify_subtitle(filename):
 @app.route('/video/<pid>/waveform.json', methods=['GET'])
 def load_waveform(pid):
   coll=resource_lookup['video'](request)
-  return Response( coll.get_waveform_data(pid), mimetype='text/json')
+  data = coll.get_waveform_data(pid)
+  if type(data) is Response:
+    return data
+  else:
+    return Response( data, mimetype='text/json')
 
 @app.route('/')
 def index():
