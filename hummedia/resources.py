@@ -152,6 +152,37 @@ class MediaAsset(Resource):
 
         return self.serialize_bundle(assets.find_one({'_id': id}))
 
+    def get_waveform_data(self, video_id):
+        import os
+        from shelljob import proc
+        from subprocess import PIPE, Popen
+        from helpers import endpoint_404
+        print request
+
+        group = proc.Group()
+        path = os.path.dirname(__file__)
+        cmd =  os.path.join(path, 'utils', 'waveform-2.0.0', 'waveform')
+        asset = MediaAsset.model.find_one({'@graph.pid': video_id})
+
+        if asset is None:
+            return endpoint_404()
+
+        locator = asset['@graph']['ma:locator'][0]
+        fid = locator['@id']
+        ext = locator['ma:hasFormat'].split('/')[-1]
+
+        # TODO: need to decide whether to prefer webm or mp4
+        filename = config.MEDIA_DIRECTORY + fid + '.' + ext
+        process = Popen([cmd, filename, '--wjs-plain', '--waveformjs', '-'], stdout=PIPE)
+
+        def data():
+            lines_iterator = iter(process.stdout.readline, '')
+            for line in lines_iterator:
+                yield line
+            process.communicate()
+
+        return data()
+
     @staticmethod
     def set_new_file(video_id, new_id, filepath):
         ''' Returns a tuple with the first value T/F, and the second, if False,

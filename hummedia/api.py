@@ -3,9 +3,6 @@ from helpers import crossdomain, endpoint_404, mongo_jsonify
 from resources import *
 from config import CROSS_DOMAIN_HOSTS
 from hummedia import app
-from shelljob import proc
-import subprocess
-from subprocess import Popen
 
 resource_lookup={"annotation":Annotation,"collection":AssetGroup,"video":MediaAsset, "account":UserProfile}
 
@@ -50,32 +47,8 @@ def modify_subtitle(filename):
 
 @app.route('/video/<pid>/waveform.json', methods=['GET'])
 def load_waveform(pid):
-  import os
-
-  video = MediaAsset(request)
-  group = proc.Group()
-  path = os.path.dirname(__file__)
-  cmd =  os.path.join(path, 'utils', 'waveform-2.0.0', 'waveform')
-  asset = MediaAsset.model.find_one({'@graph.pid': pid})
-
-  if asset is None:
-    return endpoint_404()
-
-  locator = asset['@graph']['ma:locator'][0]
-  fid = locator['@id']
-  ext = locator['ma:hasFormat'].split('/')[-1]
-
-  # TODO: need to decide whether to prefer webm or mp4
-  filename = config.MEDIA_DIRECTORY + fid + '.' + ext
-  process = Popen([cmd, filename, '--wjs-plain', '--waveformjs', '-'], stdout=subprocess.PIPE)
-  
-  def data():
-    lines_iterator = iter(process.stdout.readline, '')
-    for line in lines_iterator:
-      yield line
-    process.communicate()
-
-  return Response( data(), mimetype='text/json')
+  coll=resource_lookup['video'](request)
+  return Response( coll.get_waveform_data(pid), mimetype='text/json')
 
 @app.route('/')
 def index():
