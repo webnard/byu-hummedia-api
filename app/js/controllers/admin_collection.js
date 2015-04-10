@@ -186,28 +186,17 @@ function AdminCollectionCtrl($scope, Collection, Video, $routeParams, $location,
     };
 
     $scope.addVideosToCollection = function(){
-        $scope.videos_to_add=[];
-        
+        var videos_to_add=[];
+
         for(var i in $scope.selected_videos){
             if($scope.selected_videos[i]==true){
-                $scope.videos_to_add.push(i);
+              videos_to_add.push(i);
             }
-        }        
-        var packet = [
-            {"collection":
-                {"id": $scope.collection_data['pid'],"title": $scope.collection_data['dc:title']},
-             "videos": $scope.videos_to_add} //this is an array of pids
-        ];        
-        
-        $http.post('/api/v2/batch/video/membership', packet).success(function(data){
-        });
-         
+        }
+        Collection.addVideosToCollection(videos_to_add, $scope.collection_data['pid'], $scope.collection_data['dc:title'])
+            .then(updateCollectionData);
         $scope.selected_videos = {};
-                
-        updateCollectionData();
-        
         $scope.toggleModal('#modal-add-video');
-        
     };
     
     $scope.deleteCourses = function(){

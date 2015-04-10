@@ -112,8 +112,6 @@ function AdminVideoCtrl($scope, Video, language, $routeParams, $location, Collec
     }
 
     $scope.addVideoToCollections = function() {
-        //$scope.toggleModal('modal-add-video');
-
         var selected = $scope.video['ma:isMemberOf'];
 
         for(var id in $scope.selected_collections) {
@@ -142,7 +140,12 @@ function AdminVideoCtrl($scope, Video, language, $routeParams, $location, Collec
             }
         }
         $scope.video['ma:isMemberOf'] = selected;
-        Video.update({identifier: $scope.video.pid, "ma:isMemberOf": selected});
+        selected.forEach(function(collection) {
+            var c_id = collection['@id'];
+            var c_title = collection['title'];
+            var vid_ids = [$scope.video['@id']];
+            Collection.addVideosToCollection(vid_ids, c_id, c_title);
+        });
         $scope.selected_collections = {}; // reset
     }
 
