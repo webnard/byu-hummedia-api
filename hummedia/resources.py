@@ -118,13 +118,25 @@ class UserProfile(Resource):
         url="https://ws.byu.edu/rest/v1.0/academic/registration/studentschedule/"+userid+"/"+getCurrentSem()
         headerVal = byu_ws_sdk.get_http_authorization_header(BYU_WS_ID, BYU_SHARED_SECRET, byu_ws_sdk.KEY_TYPE_API,byu_ws_sdk.ENCODING_NONCE,actor=username,url=url,httpMethod=byu_ws_sdk.HTTP_METHOD_GET,actorInHash=True)
         res = requests.get(url, headers={'Authorization': headerVal})
+        """ A haiku:
+
+              Success gives JSON,
+              but errors give XML.
+             Pray this handles both.  """
         try:
             return json.loads(res.text)
-        except Exception:
-            root = ET.fromstring(res.text)
-            errMsg = root.\
-                find('fault/value/*/member/[name="faultString"]/value/string')
-            raise Exception(errMsg.text)
+        except ValueError:
+            try:
+                root = ET.fromstring(res.text)
+                errMsg = root.\
+                   find('fault/value/*/member/[name="faultString"]'
+                        '/value/string')
+                if errMsg is None:
+                    raise res.text
+
+                raise Exception(errMsg.text)
+            except ET.ParseError:
+                raise res.text
       
 class MediaAsset(Resource):
     collection=assets
