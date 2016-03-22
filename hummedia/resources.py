@@ -110,17 +110,8 @@ class UserProfile(Resource):
         return q
 
     def get_enrollments(self, username, userid):
-        from flask import request, Response, jsonify, current_app, session
-        from flask_oauth import OAuth
-        from datetime import datetime, timedelta, date
-        from functools import update_wrapper
-        from mongokit import cursor
-        from bson import ObjectId
-        from models import connection
         from config import APIHOST, YT_SERVICE, BYU_WS_ID, BYU_SHARED_SECRET
-        from urllib2 import Request, urlopen, URLError
-        import json, byu_ws_sdk, requests, re, os, mimetypes
-        import time
+        import json, byu_ws_sdk, requests
         import xml.etree.ElementTree as ET
 
         def getCurrentSem():
