@@ -30,7 +30,12 @@ class UserProfile(Resource):
                 q['_id']=ObjectId(str(id))
             except Exception as e:
                 return bundle_400("The ID you submitted is malformed.")
-            self.bundle=self.get_bundle(q)
+            if "enrollments" in self.request.args:
+                info = self.get_bundle(q)
+                en = self.get_enrollments(info['username'], info['userid'])
+                self.bundle = dict(en.items() + ("username", info['username']))
+            else:
+                self.bundle=self.get_bundle(q)
             if self.bundle:
                 self.bundle=self.auth_filter(self.bundle)
                 if not self.bundle:
@@ -103,6 +108,42 @@ class UserProfile(Resource):
         else:
             q["oauth"][self.manual_request["provider"]]=self.manual_request["provider_id"]
         return q
+
+    def get_enrollments(self, username, userid):
+        from flask import request, Response, jsonify, current_app, session
+        from flask_oauth import OAuth
+        from datetime import datetime, timedelta, date
+        from functools import update_wrapper
+        from mongokit import cursor
+        from bson import ObjectId
+        from models import connection
+        from config import APIHOST, YT_SERVICE, BYU_WS_ID, BYU_SHARED_SECRET
+        from urllib2 import Request, urlopen, URLError
+        import json, byu_ws_sdk, requests, re, os, mimetypes
+        import time
+        import xml.etree.ElementTree as ET
+
+        def getCurrentSem():
+            today=datetime.now()
+            sem="1"
+            if today.month in [5,6]:
+                sem="3"
+            elif today.month in [7,8]:
+                sem="4"
+            elif today.month in [9,10,11,12]:
+                sem="5"
+            return str(today.year)+sem
+
+        url="https://ws.byu.edu/rest/v1.0/academic/registration/studentschedule/"+userid+"/"+getCurrentSem()
+        headerVal = byu_ws_sdk.get_http_authorization_header(BYU_WS_ID, BYU_SHARED_SECRET, byu_ws_sdk.KEY_TYPE_API,byu_ws_sdk.ENCODING_NONCE,actor=username,url=url,httpMethod=byu_ws_sdk.HTTP_METHOD_GET,actorInHash=True)
+        res = requests.get(url, headers={'Authorization': headerVal})
+        try:
+            return json.loads(res.text)
+        except Exception:
+            root = ET.fromstring(res.text)
+            errMsg = root.\
+                find('fault/value/*/member/[name="faultString"]/value/string')
+            raise Exception(errMsg.text)
       
 class MediaAsset(Resource):
     collection=assets
