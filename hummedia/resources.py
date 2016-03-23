@@ -30,7 +30,12 @@ class UserProfile(Resource):
                 q['_id']=ObjectId(str(id))
             except Exception as e:
                 return bundle_400("The ID you submitted is malformed.")
-            self.bundle=self.get_bundle(q)
+            if "enrollments" in self.request.args:
+                info = self.get_bundle(q)
+                en = self.get_enrollments(info['username'], info['userid'])
+                self.bundle = dict(en.items() + ("username", info['username']))
+            else:
+                self.bundle=self.get_bundle(q)
             if self.bundle:
                 self.bundle=self.auth_filter(self.bundle)
                 if not self.bundle:
@@ -103,6 +108,35 @@ class UserProfile(Resource):
         else:
             q["oauth"][self.manual_request["provider"]]=self.manual_request["provider_id"]
         return q
+
+    def get_enrollments(self, username, userid):
+        from config import APIHOST, YT_SERVICE, BYU_WS_ID, BYU_SHARED_SECRET
+        import json, byu_ws_sdk, requests
+        import xml.etree.ElementTree as ET
+        from helpers import getCurrentSem
+
+        url="https://ws.byu.edu/rest/v1.0/academic/registration/studentschedule/"+userid+"/"+getCurrentSem()
+        headerVal = byu_ws_sdk.get_http_authorization_header(BYU_WS_ID, BYU_SHARED_SECRET, byu_ws_sdk.KEY_TYPE_API,byu_ws_sdk.ENCODING_NONCE,actor=username,url=url,httpMethod=byu_ws_sdk.HTTP_METHOD_GET,actorInHash=True)
+        res = requests.get(url, headers={'Authorization': headerVal})
+        """ A haiku:
+
+              Success gives JSON,
+              but errors give XML.
+             Pray this handles both.  """
+        try:
+            return json.loads(res.text)
+        except ValueError:
+            try:
+                root = ET.fromstring(res.text)
+                errMsg = root.\
+                   find('fault/value/*/member/[name="faultString"]'
+                        '/value/string')
+                if errMsg is None:
+                    raise res.text
+
+                raise Exception(errMsg.text)
+            except ET.ParseError:
+                raise res.text
       
 class MediaAsset(Resource):
     collection=assets
