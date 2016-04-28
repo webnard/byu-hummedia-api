@@ -33,7 +33,8 @@ class UserProfile(Resource):
             if "enrollments" in self.request.args:
                 info = self.get_bundle(q)
                 en = self.get_enrollments(info['username'], info['userid'])
-                self.bundle = dict(en.items() + ("username", info['username']))
+                en.update({"username": info['username'], '_id': q['_id']})
+                self.bundle = en
             else:
                 self.bundle=self.get_bundle(q)
             if self.bundle:
