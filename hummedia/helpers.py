@@ -382,15 +382,17 @@ def getYtThumbs(ids=[]):
     return ytThumbs
 
 def getCurrentSem():
-    today=datetime.now()
-    sem="1"
-    if today.month in [5,6]:
-        sem="4" if today.day > 22 else "3"
-    elif today.month in [7,8]:
-        sem="5" if today.day > 15 else "4"
-    elif today.month in [9,10,11,12]:
-        sem="5"
-    return str(today.year)+sem
+    now = datetime.now()
+    date = str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
+    url = "https://ws.byu.edu/rest/v1/academic/controls/controldatesws/asofdate/{0}/semester.json".format(date)
+
+    try:
+        return json.loads(requests.get(url).content)["ControldateswsService"]\
+                    ["response"]\
+                    ["date_list"]\
+                    [0]["year_term"]
+    except KeyError:
+        return ''
 
 def getVideoInfo(filename):
     from subprocess import check_output
