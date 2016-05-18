@@ -807,6 +807,8 @@ class AssetGroup(Resource):
 
                     if vid["@graph"]["type"]=="humvideo":
                         needs_ext=True
+                    elif payload['@graph']['type']=='humaudio':
+                        needs_ext=True
                     elif vid["@graph"]["type"]=="yt":
                         needs_ext=False
                     for location in vid["@graph"]["ma:locator"]:
