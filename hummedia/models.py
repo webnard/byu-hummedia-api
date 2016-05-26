@@ -8,7 +8,8 @@ class IsoDate(CustomType):
     init_type = None
 
     def to_bson(self, value):
-        return unicode(datetime.datetime.strftime(value,'%Y-%m-%d'))
+        if value is not None:
+            return unicode(datetime.datetime.strftime(value,'%Y-%m-%d'))
 
     def to_python(self, value):
         if value is not None:
