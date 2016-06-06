@@ -123,11 +123,11 @@ def test_retrieve_audio_with_bad_collection(ASSETS, ACCOUNTS, app):
   membership_result = app.post('/batch/video/membership', data=json.dumps(membership), headers={'Content-Type': "application/json"})
   assert membership_result.status_code is 200
 
-  data = json.loads(app.get('/video/' + pid))
+  data = json.loads(app.get('/video/' + pid).data)
   assert(len(data['ma:isMemberOf']) is 1)
 
   # delete the collection
-  app.delete('/collection'/ + col_pid)
+  app.delete('/collection/' + col_pid)
   result = app.get('/video/' + pid)
   data = json.loads(result.data)
   assert(len(data['ma:isMemberOf']) is 0)
