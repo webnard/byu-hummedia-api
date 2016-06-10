@@ -630,6 +630,10 @@ class MediaAsset(Resource):
 
         return mongo_jsonify(bundle)
 
+@app.route('/annotation/<annotation_id>/copy/<collection_id>',methods=['PUT'])
+def copy_annotation(aid, cid):
+  pass
+
 @app.route('/batch/audio/ingest',methods=['POST'])
 def audioCreationBatch():
     import mutagen
