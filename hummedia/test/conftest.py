@@ -15,7 +15,8 @@ def ACCOUNTS():
   return {
    'SUPERUSER': {'superuser': True, 'username': 'arbitraryname'},
    'STUDENT': {'superuser': False, 'username': 'miss_havisham', 'role': 'student'},
-   'FACULTY': {'superuser': False, 'username': 'john_psota', 'role': 'faculty'}
+   'FACULTY': {'superuser': False, 'username': 'john_psota', 'role': 'faculty'},
+   'FACULTY2': {'superuser': False, 'username': 'monte_else', 'role': 'faculty'},
   }
 
 @pytest.fixture

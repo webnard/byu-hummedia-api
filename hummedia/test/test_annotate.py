@@ -247,7 +247,6 @@ def test_unauthorized_student_cannot_create_required_annotation(app, ACCOUNTS):
   app.login(ACCOUNTS['STUDENT'])
   required = {"media":[{"id":vid_pid,"name":"Media0","url":["https://milo.byu.edu///movies/50aba99cbe3e2dadd67872da44b0da94/54131f93/0033467.mp4"],"target":"hum-video","duration":300.011,"popcornOptions":{"frameAnimation":True},"controls":False,"tracks":[{"name":"Layer 0","id":"0","trackEvents":[]}],"clipData":{}}]}
   req_result = app.post('/annotation?client=popcorn', data=json.dumps(required), headers={'Content-Type': 'application/json'})
-  print req_result
   assert req_result.status_code == 401, "Unauthorized student did not get appropriate error when trying to create a required annotation"
 
 def test_patch_with_transcript(app, ACCOUNTS):
@@ -286,3 +285,44 @@ def test_patch_with_transcript(app, ACCOUNTS):
   full_coll_data = json.loads(full_coll.data)
 
   assert full_coll_data['videos'][0]['transcript'], "Transcript not enabled."
+
+def test_copy_annotations(app, ACCOUNTS):
+  app.login(ACCOUNTS['FACULTY'])
+
+  v = app.post('/video')
+  data = json.loads(v.data)
+  vid_pid = data['pid']
+
+  c = app.post('/collection', data=json.dumps({}), headers={'Content-Type': 'application/json'})
+  data = json.loads(c.data)
+  col_pid = data['pid']
+
+  # attach video to collection
+  membership = [{"collection":{"id":col_pid,"title":"Something"},"videos":[vid_pid]}]
+  membership_result = app.post('/batch/video/membership', data=json.dumps(membership), headers={'Content-Type': "application/json"})
+  assert membership_result.status_code is 200
+
+  # now make a collection-based annotation
+  collection_based = {"media":[{"id":vid_pid,"name":"Media0","url":["https://milo.byu.edu///movies/50aba99cbe3e2dadd67872da44b0da94/54131f93/0033467.mp4"],"target":"hum-video","duration":300.011,"popcornOptions":{"frameAnimation":True},"controls":False,"tracks":[{"name":"Layer 0","id":"0","trackEvents":[{"id":"TrackEvent0","type":"skip","popcornOptions":{"start":0,"end":5,"target":"target-0","__humrequired":False,"id":"TrackEvent0"},"track":"0","name":"TrackEvent0"}]}],"clipData":{}}]}
+  ann = app.post('/annotation?client=popcorn&collection=' + col_pid, data=json.dumps(collection_based), headers={'Content-Type':'application/json'})
+  assert ann.status_code is 200, "User could not create collection-based annotation"
+  ann_data = json.loads(ann.data)
+
+  app.login(ACCOUNTS['FACULTY2'])
+
+  # create a separate collection to house a video for faculty2
+  c2 = app.post('/collection', data=json.dumps({}), headers={'Content-Type': 'application/json'})
+  data = json.loads(c2.data)
+  col2_pid = data['pid']
+
+  # attach video to collection
+  membership = [{"collection":{"id":col2_pid,"title":"Something"},"videos":[vid_pid]}]
+  membership_result = app.post('/batch/video/membership', data=json.dumps(membership), headers={'Content-Type': "application/json"})
+  assert membership_result.status_code is 200
+
+  ann_copy = app.put('/annotation/' + ann_data['tracks']['id'] + '/copy/' + col2_pid)
+  assert ann_copy.status_code is 200
+
+  annotation_result = app.get('/annotation?client=popcorn&collection=' + col2_pid + '&dc:relation=' + vid_pid)
+  data = json.loads(annotation_result.data)
+  assert len(data) is 1
